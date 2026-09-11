@@ -124,12 +124,14 @@ class Scorecard:
         reasons = []
         for c in self.contributions(application):
             best = max(self.points[c.feature].values())
-            reasons.append({
-                "feature": c.feature,
-                "bin": c.bin_label,
-                "points": c.points,
-                "points_lost": best - c.points,
-            })
+            reasons.append(
+                {
+                    "feature": c.feature,
+                    "bin": c.bin_label,
+                    "points": c.points,
+                    "points_lost": best - c.points,
+                }
+            )
         reasons.sort(key=lambda r: -r["points_lost"])
         # A reason that cost nothing is not a reason for the decline.
         return [r for r in reasons if r["points_lost"] > 0][:limit]
@@ -144,7 +146,11 @@ def logistic(x: float) -> float:
 
 
 def fit_logistic(
-    rows: list[list[float]], target: list[int], *, epochs: int = 400, lr: float = 0.1,
+    rows: list[list[float]],
+    target: list[int],
+    *,
+    epochs: int = 400,
+    lr: float = 0.1,
     l2: float = 0.001,
 ) -> tuple[list[float], float]:
     """Plain gradient-descent logistic regression.
@@ -163,8 +169,8 @@ def fit_logistic(
     for _ in range(epochs):
         grad_w = [0.0] * n_features
         grad_b = 0.0
-        for row, y in zip(rows, target):
-            prediction = logistic(sum(w * x for w, x in zip(weights, row)) + bias)
+        for row, y in zip(rows, target, strict=False):
+            prediction = logistic(sum(w * x for w, x in zip(weights, row, strict=False)) + bias)
             error = prediction - y
             for j, x in enumerate(row):
                 grad_w[j] += error * x
@@ -191,7 +197,7 @@ def brier_score(probabilities: list[float], outcomes: list[int]) -> float:
     if not outcomes:
         return 0.0
     return round(
-        sum((p - y) ** 2 for p, y in zip(probabilities, outcomes)) / len(outcomes), 6
+        sum((p - y) ** 2 for p, y in zip(probabilities, outcomes, strict=False)) / len(outcomes), 6
     )
 
 
@@ -201,18 +207,20 @@ def calibration_table(
     """Predicted versus observed bad rate, by decile of predicted risk."""
     if not probabilities:
         return []
-    paired = sorted(zip(probabilities, outcomes))
+    paired = sorted(zip(probabilities, outcomes, strict=False))
     size = max(1, len(paired) // n_bins)
     table = []
     for i in range(0, len(paired), size):
         chunk = paired[i : i + size]
         if not chunk:
             continue
-        table.append({
-            "n": len(chunk),
-            "predicted": round(sum(p for p, _ in chunk) / len(chunk), 6),
-            "observed": round(sum(y for _, y in chunk) / len(chunk), 6),
-        })
+        table.append(
+            {
+                "n": len(chunk),
+                "predicted": round(sum(p for p, _ in chunk) / len(chunk), 6),
+                "observed": round(sum(y for _, y in chunk) / len(chunk), 6),
+            }
+        )
     return table
 
 
@@ -223,12 +231,10 @@ def gini(probabilities: list[float], outcomes: list[int]) -> float:
     built from, the exact calculation is fast enough and avoids the threshold-sweeping
     approximations that make AUC implementations disagree at the third decimal.
     """
-    bads = [p for p, y in zip(probabilities, outcomes) if y == 1]
-    goods = [p for p, y in zip(probabilities, outcomes) if y == 0]
+    bads = [p for p, y in zip(probabilities, outcomes, strict=False) if y == 1]
+    goods = [p for p, y in zip(probabilities, outcomes, strict=False) if y == 0]
     if not bads or not goods:
         return 0.0
-    concordant = sum(
-        1.0 if b > g else 0.5 if b == g else 0.0 for b in bads for g in goods
-    )
+    concordant = sum(1.0 if b > g else 0.5 if b == g else 0.0 for b in bads for g in goods)
     auc = concordant / (len(bads) * len(goods))
     return round(2 * auc - 1, 6)

@@ -94,13 +94,12 @@ class BinnedFeature:
         values = [self.woe[b.label] for b in self.bins if not b.is_missing]
         if len(values) < 2:
             return True
-        increasing = all(b >= a for a, b in zip(values, values[1:]))
-        decreasing = all(b <= a for a, b in zip(values, values[1:]))
+        increasing = all(b >= a for a, b in zip(values, values[1:], strict=False))
+        decreasing = all(b <= a for a, b in zip(values, values[1:], strict=False))
         return increasing or decreasing
 
     def strength(self) -> str:
-        for limit, label in ((0.02, "useless"), (0.1, "weak"), (0.3, "medium"),
-                             (0.5, "strong")):
+        for limit, label in ((0.02, "useless"), (0.1, "weak"), (0.3, "medium"), (0.5, "strong")):
             if self.iv < limit:
                 return label
         return "suspicious (check for leakage)"
@@ -134,8 +133,7 @@ def quantile_edges(values: Sequence[float], n_bins: int) -> list[float]:
     clean = sorted(v for v in values if v is not None)
     if not clean or n_bins < 2:
         return []
-    edges = [clean[min(len(clean) - 1, int(len(clean) * i / n_bins))]
-             for i in range(1, n_bins)]
+    edges = [clean[min(len(clean) - 1, int(len(clean) * i / n_bins))] for i in range(1, n_bins)]
     return sorted(set(edges))
 
 
@@ -157,19 +155,23 @@ def bin_numeric(
     if len(values) != len(target):
         raise ValueError("values and target must be the same length")
 
-    cuts = list(edges) if edges is not None else quantile_edges(
-        [v for v in values if v is not None], n_bins
+    cuts = (
+        list(edges)
+        if edges is not None
+        else quantile_edges([v for v in values if v is not None], n_bins)
     )
 
     bins: list[Bin] = []
     bounds = [-math.inf, *cuts, math.inf]
-    for lower, upper in zip(bounds, bounds[1:]):
+    for lower, upper in zip(bounds, bounds[1:], strict=False):
         bins.append(Bin(label=f"[{lower:g}, {upper:g})", lower=lower, upper=upper))
     missing_bin = Bin(label="missing", is_missing=True)
 
-    for value, y in zip(values, target):
-        target_bin = missing_bin if value is None else next(
-            (b for b in bins if b.contains(value)), missing_bin
+    for value, y in zip(values, target, strict=False):
+        target_bin = (
+            missing_bin
+            if value is None
+            else next((b for b in bins if b.contains(value)), missing_bin)
         )
         if y:
             target_bin.bads += 1
@@ -204,7 +206,7 @@ def bin_categorical(
         raise ValueError("values and target must be the same length")
 
     by_label: dict[str, Bin] = {}
-    for value, y in zip(values, target):
+    for value, y in zip(values, target, strict=False):
         label = "missing" if value is None else str(value)
         b = by_label.setdefault(label, Bin(label=label, is_missing=value is None))
         if y:

@@ -41,12 +41,10 @@ class GroupMetrics:
     bad_rate: float
 
 
-def _rates(
-    approved: Sequence[int], outcomes: Sequence[int]
-) -> tuple[float, float, float]:
+def _rates(approved: Sequence[int], outcomes: Sequence[int]) -> tuple[float, float, float]:
     """(TPR, FPR, bad rate). `outcomes` is 1 for bad, so a good is 0."""
-    goods = [(a, y) for a, y in zip(approved, outcomes) if y == 0]
-    bads = [(a, y) for a, y in zip(approved, outcomes) if y == 1]
+    goods = [(a, y) for a, y in zip(approved, outcomes, strict=False) if y == 0]
+    bads = [(a, y) for a, y in zip(approved, outcomes, strict=False) if y == 1]
 
     tpr = sum(a for a, _ in goods) / len(goods) if goods else 0.0
     fpr = sum(a for a, _ in bads) / len(bads) if bads else 0.0
@@ -79,8 +77,11 @@ def group_metrics(
 
 
 def audit(
-    groups: Sequence[str], approved: Sequence[int], outcomes: Sequence[int],
-    *, reference: str | None = None,
+    groups: Sequence[str],
+    approved: Sequence[int],
+    outcomes: Sequence[int],
+    *,
+    reference: str | None = None,
 ) -> dict:
     """Full fairness report.
 
@@ -91,8 +92,10 @@ def audit(
     """
     metrics = group_metrics(groups, approved, outcomes)
     if len(metrics) < 2:
-        return {"groups": {k: v.__dict__ for k, v in metrics.items()},
-                "note": "fewer than two groups; nothing to compare"}
+        return {
+            "groups": {k: v.__dict__ for k, v in metrics.items()},
+            "note": "fewer than two groups; nothing to compare",
+        }
 
     reference = reference or max(metrics.values(), key=lambda m: m.n).group
     ref = metrics[reference]
@@ -104,12 +107,9 @@ def audit(
         comparisons[name] = {
             "approval_rate_difference": round(m.approval_rate - ref.approval_rate, 6),
             "disparate_impact": (
-                round(m.approval_rate / ref.approval_rate, 6)
-                if ref.approval_rate else None
+                round(m.approval_rate / ref.approval_rate, 6) if ref.approval_rate else None
             ),
-            "equal_opportunity_gap": round(
-                m.true_positive_rate - ref.true_positive_rate, 6
-            ),
+            "equal_opportunity_gap": round(m.true_positive_rate - ref.true_positive_rate, 6),
             "equalised_odds_gap": round(
                 max(
                     abs(m.true_positive_rate - ref.true_positive_rate),
@@ -153,7 +153,7 @@ def threshold_for_parity(
     """
     out: dict[str, float] = {}
     for name in sorted(set(groups)):
-        group_scores = sorted(s for s, g in zip(scores, groups) if g == name)
+        group_scores = sorted(s for s, g in zip(scores, groups, strict=False) if g == name)
         if not group_scores:
             continue
         # Approve the top `target_rate` fraction.

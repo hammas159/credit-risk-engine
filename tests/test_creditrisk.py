@@ -36,7 +36,7 @@ def built_scorecard():
     income, age, target = synthetic()
     f_income = bin_numeric("income", income, target, n_bins=5)
     f_age = bin_numeric("age", age, target, n_bins=5)
-    rows = [[f_income.transform(i), f_age.transform(a)] for i, a in zip(income, age)]
+    rows = [[f_income.transform(i), f_age.transform(a)] for i, a in zip(income, age, strict=False)]
     weights, bias = fit_logistic(rows, target)
     card = Scorecard(
         {"income": f_income, "age": f_age},
@@ -102,9 +102,7 @@ class TestBinning:
         assert all(b.total >= 15 for b in numeric)
 
     def test_categorical_binning(self):
-        feature = bin_categorical(
-            "grade", ["A", "A", "B", "B", "C", None], [0, 0, 1, 1, 1, 0]
-        )
+        feature = bin_categorical("grade", ["A", "A", "B", "B", "C", None], [0, 0, 1, 1, 1, 0])
         assert {b.label for b in feature.bins} == {"A", "B", "C", "missing"}
 
     def test_mismatched_lengths_are_refused(self):
@@ -193,7 +191,9 @@ class TestMetrics:
 
     def test_the_model_discriminates(self):
         card, (income, age, target) = built_scorecard()
-        probs = [card.probability({"income": i, "age": a}) for i, a in zip(income, age)]
+        probs = [
+            card.probability({"income": i, "age": a}) for i, a in zip(income, age, strict=False)
+        ]
         assert gini(probs, target) > 0.3
 
     def test_brier_rewards_calibration_not_just_ranking(self):
@@ -205,7 +205,9 @@ class TestMetrics:
 
     def test_calibration_table_compares_predicted_with_observed(self):
         card, (income, age, target) = built_scorecard()
-        probs = [card.probability({"income": i, "age": a}) for i, a in zip(income, age)]
+        probs = [
+            card.probability({"income": i, "age": a}) for i, a in zip(income, age, strict=False)
+        ]
         table = calibration_table(probs, target, n_bins=5)
         assert len(table) >= 5
         assert table[0]["predicted"] < table[-1]["predicted"]
@@ -218,9 +220,7 @@ class TestMetrics:
 
 class TestFairness:
     def test_group_metrics(self):
-        metrics = group_metrics(
-            ["a", "a", "b", "b"], [1, 0, 1, 1], [0, 1, 0, 1]
-        )
+        metrics = group_metrics(["a", "a", "b", "b"], [1, 0, 1, 1], [0, 1, 0, 1])
         assert metrics["a"].n == 2
         assert metrics["b"].approval_rate == 1.0
 
