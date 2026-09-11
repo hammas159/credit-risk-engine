@@ -1,0 +1,31 @@
+[project]
+name = "credit-risk-engine"
+version = "0.1.0"
+description = "Credit scorecard: WoE/IV binning, points allocation, reason codes, calibration and a fairness audit."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+# No sklearn. On WoE-transformed features the fit is convex and a few lines, and the
+# point of a scorecard is that every step can be read.
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8.3", "ruff>=0.8"]
+ui  = ["streamlit>=1.40", "pandas>=2.2"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/creditrisk"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
