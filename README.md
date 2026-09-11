@@ -188,3 +188,58 @@ compared against a tolerance.
 ## License
 
 MIT
+
+---
+
+## Run it yourself
+
+```bash
+git clone https://github.com/hammas159/credit-risk-engine
+cd credit-risk-engine
+
+pip install -e .         # zero dependencies to resolve
+pytest -q                # 40 tests, under a second
+```
+
+```python
+from creditrisk import bin_numeric, fit_logistic, Scorecard, gini, brier_score, audit
+
+income_f = bin_numeric("income", income, default_flag, n_bins=5)
+age_f    = bin_numeric("age",    age,    default_flag, n_bins=5)
+print(income_f.iv, income_f.strength(), income_f.is_monotonic())
+
+rows = [[income_f.transform(i), age_f.transform(a)] for i, a in zip(income, age)]
+weights, bias = fit_logistic(rows, default_flag)
+
+card = Scorecard({"income": income_f, "age": age_f},
+                 dict(zip(["income", "age"], weights)), bias).build()
+
+card.score({"income": 180, "age": 45})        # 584
+card.probability({"income": 180, "age": 45})  # 0.0336
+card.reason_codes({"income": 25, "age": 22})  # adverse-action notice
+
+audit(gender, approved, outcomes)             # four fairness measures, all four
+```
+
+## Problems hit while building this
+
+**The first scorecard was statistically correct and commercially inverted.** The model
+predicts `P(bad)`, but a credit score is by universal convention the log-odds of *good*
+— higher is safer. Without the sign flip, the best applicants scored **lowest**: income
+180k returned a score of 397 and a 96% probability of default.
+
+What makes this the worst bug in the repo is that **every metric looked fine**. Gini was
+healthy, calibration was healthy, the reason codes were well-formed. Nothing catches it
+except deliberately checking the direction. That check is now the first test in the file,
+and `gini` returning **−1.0** on an inverted model is a second line of defence.
+
+**Information Value above 0.5 was originally labelled "excellent".** It is almost always
+**leakage** — a collections flag that is only ever set after default, a field populated
+by the decision itself. *Fixed* by labelling that band `suspicious (check for leakage)`,
+with a test that feeds the label back in as a feature and asserts it is flagged rather
+than celebrated.
+
+**Reporting one fairness measure was hiding a theorem.** Demographic parity and
+equalised odds cannot both hold when base rates differ between groups — that is proven,
+not a tuning problem. *Fixed* by returning all four measures plus the incompatibility
+note, so a reader has to choose a standard rather than be handed one.
