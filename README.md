@@ -1,19 +1,45 @@
-# credit-risk-engine (Python, pandas, zero core dependencies)
+<h1 align="center">credit-risk-engine</h1>
+<p align="center"><i>A credit scorecard that can explain every decline, in points, to a regulator</i></p>
 
-[![ci](https://github.com/hammas159/credit-risk-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/hammas159/credit-risk-engine/actions/workflows/ci.yml)
-![python](https://img.shields.io/badge/python-3.10%2B-blue)
-![dependencies](https://img.shields.io/badge/dependencies-none-success)
-![license](https://img.shields.io/badge/license-MIT-green)
+<p align="center">
+  <a href="#why-scorecards-when-gradient-boosting-scores-better">Why scorecards</a> &middot;
+  <a href="#weight-of-evidence">Weight of Evidence</a> &middot;
+  <a href="#the-points-scale">The points scale</a> &middot;
+  <a href="#calibration-not-just-discrimination">Calibration</a> &middot;
+  <a href="#fairness-four-measures-because-they-are-incompatible">Fairness</a> &middot;
+  <a href="#problems-hit-while-building-this">Problems hit</a>
+</p>
 
-**A credit scorecard that can explain every decline, in points, to a regulator.**
-
-WoE/IV binning → logistic fit → integer points → reason codes → calibration → fairness
-audit. Zero dependencies, because the entire argument for a scorecard is that a person
-can read it.
+<p align="center">
+  <a href="https://github.com/hammas159/credit-risk-engine/actions/workflows/ci.yml"><img src="https://github.com/hammas159/credit-risk-engine/actions/workflows/ci.yml/badge.svg" alt="ci"></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="python">
+  <img src="https://img.shields.io/badge/core%20deps-zero-success" alt="deps">
+  <img src="https://img.shields.io/badge/stack-pandas%20%C2%B7%20Streamlit-orange" alt="stack">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="license"></a>
+</p>
 
 ---
 
 ## Why scorecards, when gradient boosting scores better
+
+```mermaid
+flowchart LR
+    D["applicant data"] --> W["WoE / IV binning"]
+    W --> L["logistic fit"]
+    L --> P["integer points scale"]
+    P --> S["score"]
+    S --> R["reason codes<br/>why THIS decline"]
+    S --> C["calibration check"]
+    S --> F["fairness audit<br/>four measures"]
+
+    style R fill:#2563eb,color:#fff
+    style F fill:#f59e0b,color:#fff
+```
+
+Gradient boosting scores better. **A scorecard can be read by a person** - and when a
+regulator asks why an application was declined, "points" is an answer and "feature
+importance" is not.
+
 
 Because in regulated lending **an unexplainable decision is not a decision**. Adverse-
 action notices are a legal requirement in most jurisdictions; a model that cannot
@@ -184,6 +210,10 @@ compared against a tolerance.
   monotonicity is *checked*, not enforced.
 - The fairness audit measures outcomes. It cannot tell you whether a feature is a proxy
   for a protected attribute — that needs domain knowledge, not statistics.
+
+## Keywords
+
+credit scoring &middot; scorecard &middot; weight of evidence &middot; WoE &middot; information value &middot; IV binning &middot; logistic regression &middot; reason codes &middot; adverse action &middot; model calibration &middot; Brier score &middot; fairness &middot; disparate impact &middot; equalized odds &middot; explainable AI &middot; regulated ML &middot; credit risk &middot; Basel
 
 ## License
 
