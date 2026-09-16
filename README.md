@@ -183,6 +183,24 @@ card.reason_codes({"income": 25, "age": 22})
 audit(gender, approved, outcomes)
 ```
 
+---
+
+## Input
+
+![input](docs/images/input.png)
+
+## Output
+
+`python demo.py`
+
+![output](docs/images/output.png)
+
+*The reason code names `income`, not `age` — even though `age` contributed more points.
+What a declined applicant is owed is the factor that cost them the most relative to the
+best available bin, and `age` carries no signal to lose points on.*
+
+---
+
 ## Tests
 
 **40 tests. No dependencies, no data download.**
