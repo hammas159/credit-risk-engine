@@ -6,6 +6,7 @@ Fits a scorecard on synthetic data where the true relationship is known
 (higher income means lower risk, age carries no signal), then scores one
 applicant and explains the decline in points. No network, no dependencies.
 """
+
 import random
 import sys
 
@@ -42,8 +43,10 @@ applicant = {"income": 34.0, "age": 29.0}
 print("INPUT")
 print(f"   applicant          {applicant}")
 print(f"   cutoff             {CUTOFF}")
-print(f"   scorecard          fitted on {len(income)} accounts, "
-      f"PDO={card.pdo:.0f} base={card.base_score}")
+print(
+    f"   scorecard          fitted on {len(income)} accounts, "
+    f"PDO={card.pdo:.0f} base={card.base_score}"
+)
 print()
 
 score = card.score(applicant)
@@ -52,8 +55,7 @@ prob = card.probability(applicant)
 print("OUTPUT")
 print(f"   score              {score}")
 print(f"   P(default)         {prob:.1%}")
-print(f"   decision           {'APPROVE' if score >= CUTOFF else 'DECLINE'}"
-      f"   (cutoff {CUTOFF})")
+print(f"   decision           {'APPROVE' if score >= CUTOFF else 'DECLINE'}   (cutoff {CUTOFF})")
 print()
 print("   points breakdown")
 for c in card.contributions(applicant):
@@ -63,6 +65,5 @@ print("   adverse-action reason codes")
 for r in card.reason_codes(applicant):
     print(f"      {r}")
 print()
-fitted = [card.probability({"income": i, "age": a})
-          for i, a in zip(income, age, strict=False)]
+fitted = [card.probability({"income": i, "age": a}) for i, a in zip(income, age, strict=False)]
 print(f"   model gini         {gini(fitted, target):.3f}")
