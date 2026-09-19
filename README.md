@@ -1,4 +1,4 @@
-<h1 align="center">credit-risk-engine</h1>
+<h1 align="center">credit-risk-engine (Python · WoE/IV binning · logistic scorecard)</h1>
 <p align="center"><i>A credit scorecard that can explain every decline, in points, to a regulator</i></p>
 
 <p align="center">
